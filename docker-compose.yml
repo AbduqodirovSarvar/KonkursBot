@@ -22,8 +22,19 @@ services:
     networks:
       - network_for_portfolio
 
-
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: nginx
+    ports:
+      - "443:443"
+      - "8443:8443"
+    volumes:
+      - /etc/letsencrypt/:/etc/letsencrypt/
+    networks:
+      - network_for_portfolio
 
 networks:
-  _network_for_portfolio:
+  network_for_portfolio:
     driver: bridge
