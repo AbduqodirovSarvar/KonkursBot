@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KonkursBot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240229224600_initial2")]
-    partial class initial2
+    [Migration("20240302091110_Initial_migration")]
+    partial class Initial_migration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,7 +32,7 @@ namespace KonkursBot.Migrations
                     b.Property<string>("FullName")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LanguageCode")
+                    b.Property<int?>("LanguageCode")
                         .HasColumnType("INTEGER");
 
                     b.Property<long?>("ParentId")

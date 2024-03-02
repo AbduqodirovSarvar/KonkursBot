@@ -7,7 +7,7 @@
         public string? PhoneNumber { get; set; }
         public string? UserName { get; set; }
         public long? ParentId { get; set; }
-        public LanguageCode LanguageCode { get; set; } = LanguageCode.uz;
+        public LanguageCode? LanguageCode { get; set; }
         public DateTime? CreatedTime { get; private set; } = DateTime.UtcNow;
     }
 

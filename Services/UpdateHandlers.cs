@@ -11,15 +11,13 @@ namespace KonkursBot.Services
         ILogger<UpdateHandlers> logger,
         RegisterationServiceHandler registeration,
         IAppDbContext appDbContext,
-        MainMenuServiceHandler mainMenu,
-        StateService stateService
+        MainMenuServiceHandler mainMenu
         )
     {
         private readonly ILogger<UpdateHandlers> _logger = logger;
         private readonly IAppDbContext _context = appDbContext;
         private readonly RegisterationServiceHandler _registeration = registeration;
         private readonly MainMenuServiceHandler _mainMenu = mainMenu;
-        private readonly StateService _stateService = stateService;
 
         public Task HandleErrorAsync(Exception exception)
         {
@@ -37,7 +35,7 @@ namespace KonkursBot.Services
             var handler = update switch
             {
                 { Message: { } message } => BotOnMessageReceived(message, cancellationToken),
-                _ => UnknownUpdateHandlerAsync(update)
+                _ => UnknownUpdateHandlerAsync()
             };
 
             await handler;
@@ -45,42 +43,46 @@ namespace KonkursBot.Services
 
         private async Task BotOnMessageReceived(Message message, CancellationToken cancellationToken)
         {
-            var state = _stateService.GetUserState(message.Chat.Id);
-            if (state == null)
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
+            if (user == null)
             {
-                var result = state switch
-                {
-                    StateList.register_choose_language => _registeration.ReceivedLanguage(message, cancellationToken),
-                    StateList.register_get_fullname => _registeration.ReceivedFullName(message, cancellationToken),
-                    StateList.register_get_contact => _registeration.ReceivedContact(message, cancellationToken),
-                    _ => _registeration.ClickStartButton(message, cancellationToken)
-                };
-                await result;
+                await _registeration.ClickStartButton(message, cancellationToken);
                 return;
             }
-
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
-            if(user == null)
+            if (user.FullName == null)
             {
+                if(StateService.GetUserState(message.Chat.Id) == StateList.register_get_fullname)
+                {
+                    await _registeration.ReceivedFullName(message, user, cancellationToken);
+                    return;
+                }
+                await _registeration.ClickStartButton(message, cancellationToken);
+                return;
+            }
+            if(user.PhoneNumber == null)
+            {
+                if (StateService.GetUserState(message.Chat.Id) == StateList.register_get_contact)
+                {
+                    await _registeration.ReceivedContact(message, user, cancellationToken);
+                    return;
+                }
                 await _registeration.ClickStartButton(message, cancellationToken);
                 return;
             }
 
             var msg = message.Text switch
             {
-                "Konkursda qatnashish" or "Participation in the competition" or "Участие в конкурсе" => _mainMenu.ClickCompitionButton(message, user, cancellationToken),
-                "Sovg'alar" or "Gifts" or "Подарки" => _mainMenu.ClickGiftButton(message, user, cancellationToken),
-                "Ballarim" or "My scores" or "Мои результаты" => _mainMenu.ClickScoreButton(message, user, cancellationToken),
-                "Reyting" or "Rating" or "Рейтинг" => _mainMenu.ClickRatingButton(message, user, cancellationToken),
-                "Shartlar" or "Conditions" or "Условия" => _mainMenu.ClickConditionButton(message, user, cancellationToken),
+                "Konkursda qatnashish" => _mainMenu.ClickCompitionButton(message, user, cancellationToken),
+                "Sovg'alar" => _mainMenu.ClickGiftButton(message, user, cancellationToken),
+                "Ballarim" => _mainMenu.ClickScoreButton(message, user, cancellationToken),
+                "Shartlar" => _mainMenu.ClickConditionButton(message, user, cancellationToken),
                 _ => _mainMenu.ShowMainMenu(message, user, cancellationToken)
             };
             await msg;
-
             return;
         }
 
-        private Task UnknownUpdateHandlerAsync(Update update)
+        private Task UnknownUpdateHandlerAsync()
         {
             _logger.LogInformation("Unknown message received");
             return Task.CompletedTask;

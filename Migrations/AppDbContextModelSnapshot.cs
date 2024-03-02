@@ -29,7 +29,7 @@ namespace KonkursBot.Migrations
                     b.Property<string>("FullName")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LanguageCode")
+                    b.Property<int?>("LanguageCode")
                         .HasColumnType("INTEGER");
 
                     b.Property<long?>("ParentId")

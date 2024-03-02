@@ -40,7 +40,7 @@ namespace KonkursBot.Configurations
             services.AddHostedService<ConfigureWebhook>();
             services.AddScoped<MainMenuServiceHandler>();
             services.AddScoped<RegisterationServiceHandler>();
-            services.AddScoped<StateService>();
+            services.AddScoped<GetUserDataServices>();
             return services;
         }
     }

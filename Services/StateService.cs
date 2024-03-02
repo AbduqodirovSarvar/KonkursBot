@@ -2,23 +2,23 @@
 
 namespace KonkursBot.Services
 {
-    public class StateService
+    public static class StateService
     {
         private static readonly ConcurrentDictionary<long, StateList> KeyValuesState = new();
 
-        public Task SetUserState(long chatId, StateList state)
+        public static Task SetUserState(long chatId, StateList state)
         {
             KeyValuesState[chatId] = state;
             return Task.CompletedTask;
         }
 
-        public Task DeleteState(long Id)
+        public static Task DeleteState(long Id)
         {
             KeyValuesState.TryRemove(Id, out _);
             return Task.CompletedTask;
         }
 
-        public StateList? GetUserState(long Id)
+        public static StateList? GetUserState(long Id)
         {
             KeyValuesState.TryGetValue(Id, out var state);
             return state;

@@ -9,36 +9,21 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace KonkursBot.Services
 {
-    public class RegisterationServiceHandler(
+    public partial class RegisterationServiceHandler(
         ITelegramBotClient client, 
         IAppDbContext appDbContext,
-        StateService stateService,
         MainMenuServiceHandler mainMenu
         )
     {
         private readonly ITelegramBotClient _client = client;
         private readonly IAppDbContext _context = appDbContext;
-        private readonly StateService _state = stateService;
         private readonly MainMenuServiceHandler _mainMenu = mainMenu;
 
-        private static readonly Db.Entities.User? RegisterUser = null;
         public async Task ClickStartButton(Message message, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
-            if (user != null)
-            {
-                await _mainMenu.ShowMainMenu(message, user, cancellationToken);
-                return;
-            }
-
-            RegisterUser = new Db.Entities.User()
-            {
-                TelegramId = message.Chat.Id
-            };
-
             if (message.Text!.StartsWith("/start"))
             {
-                Match match = Regex.Match(message.Text, @"\d+");
+                Match match = MyRegex().Match(message.Text);
 
                 if (match.Success)
                 {
@@ -46,41 +31,36 @@ namespace KonkursBot.Services
                     var refuser = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == id, cancellationToken);
                     if (refuser != null)
                     {
-                        RegisterUser
-                        /*await _context.Users.AddAsync(new Db.Entities.User()
+                        await _context.Users.AddAsync(new Db.Entities.User()
                         {
                             TelegramId = message.Chat.Id,
                             ParentId = refuser.TelegramId,
                             UserName = message.From?.Username
-                        }, cancellationToken);*/
+                        },  cancellationToken);
                     }
                 }
             }
-         /*   else
+            else
             {
                 await _context.Users.AddAsync(new Db.Entities.User()
                 {
                     TelegramId = message.Chat.Id,
                     UserName = message.From?.Username
                 }, cancellationToken);
-            }*/
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
 
             await _client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Assalomu aleykum, botimizga hush kelibsiz, foydalanish uchun tilni tanlang!\n" +
-                "Hello, welcome to our bot, choose a language to use!\n" +
-                "Здравствуйте, добро пожаловать к нашему боту, выберите язык для использования!",
-                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup([.. Buttons.Languages], 2),
+                text: "Assalomu aleykum, botimizga hush kelibsiz!\nTo'liq ism-familyangizni yuboring!",
                 cancellationToken: cancellationToken
                 );
-
-            await _state.SetUserState(message.Chat.Id, StateList.register_choose_language);
+            await StateService.SetUserState(message.Chat.Id, StateList.register_get_fullname);
             return;
         }
 
-        public async Task ReceivedLanguage(Message message, CancellationToken cancellationToken)
+       /* public async Task ReceivedLanguage(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
             var language = message.Text switch
             {
@@ -89,14 +69,11 @@ namespace KonkursBot.Services
                 "ru" => LanguageCode.ru,
                 _ => LanguageCode.uz
             };
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
-            if (user == null)
+            if(user.LanguageCode == null)
             {
-                return;
+                user.LanguageCode = language;
+                await _context.SaveChangesAsync(cancellationToken);
             }
-
-            user.LanguageCode = language;
-            await _context.SaveChangesAsync(cancellationToken);
 
             var text = message.Text switch
             {
@@ -114,54 +91,47 @@ namespace KonkursBot.Services
 
             await _state.SetUserState(message.Chat.Id, StateList.register_get_fullname);
             return;
-        }
+        }*/
 
-        public async Task ReceivedFullName(Message message, CancellationToken cancellationToken)
+
+        public async Task ReceivedFullName(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
-            if (user == null)
-            {
-                return;
-            }
-            var text = user.LanguageCode switch
-            {
-                LanguageCode.uz => "Telefon raqamingizni yuboring!",
-                LanguageCode.en => "Send your phone number!",
-                LanguageCode.ru => "Отправьте свой номер телефона!",
-                _ => "Telefon raqamingizni yuboring!"
-            };
             user.FullName = message.Text;
             await _context.SaveChangesAsync(cancellationToken: cancellationToken);
             await _client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: text,
-                replyMarkup: KeyboardService.CreateContactRequestKeyboardMarkup(Buttons.ShareContact[(int)user.LanguageCode]),
+                text: "Telefon raqamingizni yuboring!",
+                replyMarkup: KeyboardService.CreateContactRequestKeyboardMarkup("Raqamni yuborish"),
                 cancellationToken: cancellationToken
                 );
-            await _state.SetUserState(message.Chat.Id, StateList.register_get_contact);
+            await StateService.SetUserState(message.Chat.Id, StateList.register_get_contact);
             return;
         }
 
-        public async Task ReceivedContact(Message message, CancellationToken cancellationToken)
+        public async Task ReceivedContact(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.TelegramId == message.Chat.Id, cancellationToken);
-            if (user == null)
+            if(user.FullName == null)
+            {
+                await ClickStartButton(message, cancellationToken);
+                return;
+            }
+            if (message.Contact?.PhoneNumber == null)
             {
                 return;
             }
-            if(message.Contact?.PhoneNumber == null)
-            {
-                return;
-            }
-            user.PhoneNumber = message.Contact?.PhoneNumber ?? message.Text;
+            user.PhoneNumber = message.Contact.PhoneNumber;
             await _context.SaveChangesAsync( cancellationToken: cancellationToken);
             await _client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: Buttons.Congrats[(int)user.LanguageCode],
+                text: "Tabriklaymiz, siz muvaffaqiyatli ro'yxatdan o'tdingiz!",
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken);
-            await _state.DeleteState(message.Chat.Id);
+            await StateService.DeleteState(message.Chat.Id);
+            await _mainMenu.ShowMainMenu(message, user, cancellationToken);
             return;
         }
+
+        [GeneratedRegex(@"\d+")]
+        private static partial Regex MyRegex();
     }
 }

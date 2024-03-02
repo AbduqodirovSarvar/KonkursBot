@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace KonkursBot.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial_Migration : Migration
+    public partial class Initial_migration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,8 @@ namespace KonkursBot.Migrations
                     FullName = table.Column<string>(type: "TEXT", nullable: true),
                     PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
                     UserName = table.Column<string>(type: "TEXT", nullable: true),
-                    ParentId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ParentId = table.Column<long>(type: "INTEGER", nullable: true),
+                    LanguageCode = table.Column<int>(type: "INTEGER", nullable: true),
                     CreatedTime = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>

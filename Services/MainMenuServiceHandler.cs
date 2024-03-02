@@ -1,53 +1,74 @@
 ﻿using KonkursBot.Db.Entities;
+using KonkursBot.Interfaces;
 using KonkursBot.Models;
+using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using static System.Net.WebRequestMethods;
 
 namespace KonkursBot.Services
 {
     public class MainMenuServiceHandler(
         ITelegramBotClient client,
-        StateService stateService
+        IAppDbContext appDbContext
         )
     {
         private readonly ITelegramBotClient _client = client;
-        private readonly StateService _state = stateService;
+        private readonly IAppDbContext _context = appDbContext;
         public async Task ShowMainMenu(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            List<string> list = Enumerable.Range(0, Buttons.MainMenu.GetLength(1)).Select(i => Buttons.MainMenu[(int)user.LanguageCode, i]).Cast<string>().ToList();
             await _client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "",
-                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(list, 2),
+                text: "Kerakli bo'limni tanlang!",
+                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(Buttons.MainMenuList, 2),
                 cancellationToken: cancellationToken
                 );
-            await _state.DeleteState(message.Chat.Id);
             return;
         }
 
-        public Task ClickCompitionButton(Message message, Db.Entities.User user, CancellationToken cancellationToken) 
+        public async Task ClickCompitionButton(Message message, Db.Entities.User user, CancellationToken cancellationToken) 
         {
-            return Task.CompletedTask;
+            await _client.SendTextMessageAsync(
+            chatId: message.Chat.Id,
+                text: $"Link: https://t.me/uzdevelop_bot?start={message.Chat.Id}",
+                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(Buttons.MainMenuList, 2),
+                cancellationToken: cancellationToken
+                );
+            return;
         }
 
-        public Task ClickGiftButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
+        public async Task ClickGiftButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            await _client.SendTextMessageAsync(
+                chatId: message.Chat.Id,
+                text: "Sovga chiqadi",
+                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(Buttons.MainMenuList, 2),
+                cancellationToken: cancellationToken
+                );
+            return;
         }
 
-        public Task ClickScoreButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
+        public async Task ClickScoreButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            var referals = await _context.Users.Where(x => x.ParentId == message.Chat.Id).ToListAsync();
+            await _client.SendTextMessageAsync(
+                chatId: message.Chat.Id,
+                text: $"Referallar soni: {referals.Count}",
+                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(Buttons.MainMenuList, 2),
+                cancellationToken: cancellationToken
+                );
+            return;
         }
 
-        public Task ClickConditionButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
+        public async Task ClickConditionButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
-        }
-
-        public Task ClickRatingButton(Message message, Db.Entities.User user, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
+            await _client.SendTextMessageAsync(
+                chatId: message.Chat.Id,
+                text: "Shartlar chiqadi",
+                replyMarkup: KeyboardService.CreateReplyKeyboardMarkup(Buttons.MainMenuList, 2),
+                cancellationToken: cancellationToken
+                );
+            return;
         }
     }
 }
