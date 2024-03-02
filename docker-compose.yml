@@ -11,7 +11,7 @@ services:
       - /root/MyPortfolio/DB:/app/DB
       - /root/MyPortfolio/Files:/app/Files
     ports:
-      - "5034:5034"
+      - "5000:5000"
     environment:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__SQLiteConnection=Data Source=/app/DB/KonkursBot.db
@@ -20,20 +20,10 @@ services:
       - BotConfiguration__SecretKey=qwertyuiopasdfghjkl
       - BotConfiguration__Route=/api/bot
     networks:
-      - konkurs_network
+      - network_for_portfolio
 
-  nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    container_name: konkurs_nginx
-    ports:
-      - "8443:8443"
-    volumes:
-      - /etc/letsencrypt/:/etc/letsencrypt/
-    networks:
-      - konkurs_network
+
 
 networks:
-  konkurs_network:
+  _network_for_portfolio:
     driver: bridge
